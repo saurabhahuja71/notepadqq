@@ -1,14 +1,37 @@
-# Notepadqq on Oracle Linux 9
+# <img src="https://user-images.githubusercontent.com/4319621/36906314-e3f99680-1e35-11e8-90fd-f959c9641f36.png" alt="Notepadqq" width="32" height="32" /> Notepadqq on Oracle Linux 9
+
+> [!WARNING]
+> Upstream Notepadqq is not actively maintained anymore. New maintainers are welcome.
+> It has been reported that with the most recent OS/Qt versions, the program can crash unexpectedly. Use this at your own risk.
+>  -- Daniele
+
+This repository contains the **Notepadqq source code** (from [github.com/notepadqq/notepadqq](https://github.com/notepadqq/notepadqq), merged on 2026) plus build/package instructions for **Oracle Linux 9**, where the default EPEL packages cannot be installed side by side.
+
+### Links
+
+* [Build on Oracle Linux 9](#building-on-oracle-linux-9)
+* [Upstream build instructions](#upstream-build-instructions)
+* [Distribution packages](#distribution-packages)
+
+### What is it?
+
+Notepadqq is a text editor designed by developers, for developers. Notepad++-like editor for Linux.
+
+![screenshot_20180302_163505](https://notepadqq.com/s/images/snapshot1.png)
+
+Please visit our [Wiki](https://github.com/notepadqq/notepadqq/wiki) for more screenshots and details.
+
+---
+
+## Building on Oracle Linux 9
 
 Build Notepadqq from source (and optionally package an RPM) on Oracle Linux 9.
 
 > **Note:** Current Notepadqq uses **CMake + Qt 6**, not `./configure` / classic `make` and not Qt 5. There is no top-level `configure` script.
 
----
+### Why the simple `dnf install` fails on OL9
 
-## Why the simple `dnf install` fails on OL9
-
-This system has **Mesa built against LLVM 21**. EPEL’s `qt6-qttools-devel` pulls `qt6-doctools`, which needs **LLVM 20**. Only one `llvm-libs` can be installed, so dnf stops with:
+This system has **Mesa built against LLVM 21**. EPEL's `qt6-qttools-devel` pulls `qt6-doctools`, which needs **LLVM 20**. Only one `llvm-libs` can be installed, so dnf stops with:
 
 ```text
 cannot install both llvm-libs-20... and llvm-libs-21...
@@ -20,9 +43,7 @@ package mesa-compat-libxatracker ... requires libLLVM.so.21.1
 
 **Use the path below** (system packages without tools + Qt in your home directory).
 
----
-
-## 1. Install system packages (skip `qt6-qttools-devel`)
+### 1. Install system packages (skip `qt6-qttools-devel`)
 
 ```bash
 sudo dnf config-manager --set-enabled ol9_codeready_builder
@@ -44,9 +65,7 @@ sudo dnf install -y \
 
 If that still fails, drop the `qt6-*` packages from the list and rely entirely on the user-local Qt in step 2 (you still need `cmake`, `ninja-build`, `git`, `uchardet-devel`, `pkgconf-pkg-config`, and a C++ toolchain).
 
----
-
-## 2. Install Qt 6 into `$HOME/Qt` (provides LinguistTools / lrelease)
+### 2. Install Qt 6 into `$HOME/Qt` (provides LinguistTools / lrelease)
 
 Uses [aqtinstall](https://github.com/miurahr/aqtinstall) (no system LLVM change). Needs network and several GB of disk (WebEngine is large).
 
@@ -67,12 +86,12 @@ After install you should have something like:
 $HOME/Qt/6.6.3/gcc_64
 ```
 
----
+### 3. Get the source
 
-## 3. Get the source
+The source lives in this repository, so a clone is already all you need:
 
 ```bash
-git clone --recursive https://github.com/notepadqq/notepadqq.git
+git clone --recursive https://github.com/saurabhahuja71/notepadqq.git
 cd notepadqq
 ```
 
@@ -82,9 +101,7 @@ Or use a local tree, for example:
 cd ~/Downloads/notepadqq
 ```
 
----
-
-## 4. Configure and build (CMake)
+### 4. Configure and build (CMake)
 
 Point CMake at the user-local Qt:
 
@@ -103,7 +120,7 @@ cmake --preset dev
 cmake --build --preset dev
 ```
 
-### Run without installing
+#### Run without installing
 
 ```bash
 # Ensure the Qt libs from $HOME/Qt are found at runtime
@@ -118,7 +135,7 @@ If the binary is nested (depends on generator layout), try:
 find build/release -type f -name notepadqq -executable
 ```
 
-### Install (optional)
+#### Install (optional)
 
 Default release preset installs under the build tree. For `/usr/local`:
 
@@ -132,24 +149,22 @@ sudo cmake --install build/release
 
 You may still need `LD_LIBRARY_PATH` (or an rpath) so the app finds `$HOME/Qt` libraries when launched from the menu.
 
-### Tests (optional)
+#### Tests (optional)
 
 ```bash
 ctest --preset release
 ```
 
----
+### 5. Build an RPM (optional)
 
-## 5. Build an RPM (optional)
-
-### Setup rpmbuild tree
+#### Setup rpmbuild tree
 
 ```bash
 sudo dnf install -y rpm-build rpmdevtools
 rpmdev-setuptree
 ```
 
-### Stage files from CMake install
+#### Stage files from CMake install
 
 ```bash
 cd /path/to/notepadqq
@@ -162,7 +177,7 @@ rm -rf ~/rpmbuild/BUILD/notepadqq-root
 cmake --install build/release --prefix ~/rpmbuild/BUILD/notepadqq-root/usr
 ```
 
-### SPEC file sketch
+#### SPEC file sketch
 
 Create `~/rpmbuild/SPECS/notepadqq.spec` and adjust `%files` after checking:
 
@@ -211,9 +226,7 @@ rpmbuild -bb ~/rpmbuild/SPECS/notepadqq.spec
 sudo dnf install ~/rpmbuild/RPMS/x86_64/notepadqq-*.rpm
 ```
 
----
-
-## 6. Troubleshooting
+### 6. Troubleshooting
 
 | Problem | Cause | Fix |
 |---------|--------|-----|
@@ -224,9 +237,7 @@ sudo dnf install ~/rpmbuild/RPMS/x86_64/notepadqq-*.rpm
 | App starts then fails on `.so` | Runtime libs | `export LD_LIBRARY_PATH=$HOME/Qt/6.6.3/gcc_64/lib` |
 | You only want to **run** Notepadqq | No need to build | `sudo snap install notepadqq` |
 
----
-
-## Quick reference (OL9, works around LLVM clash)
+### Quick reference (OL9, works around LLVM clash)
 
 ```bash
 # 1) system deps without qt6-qttools-devel
@@ -251,3 +262,62 @@ cmake --build --preset release
 export LD_LIBRARY_PATH="$HOME/Qt/6.6.3/gcc_64/lib"
 ./build/release/notepadqq
 ```
+
+---
+
+## Upstream build instructions
+
+| Build dependencies    | Dependencies      |
+|-----------------------|-------------------|
+| Qt 6.4 or higher      | Qt 6.4 or higher  |
+| qt6-webengine5-dev    | qt6-webengine5    |
+| qt6-websockets-dev    | qt6-websockets    |
+| qt6-svg-dev           | qt6-svg           |
+| qt6-tools-dev-tools   | coreutils         |
+| libuchardet-dev       | libuchardet       |
+| pkg-config            |                   |
+
+```bash
+cmake --preset release
+cmake --build --preset release
+```
+
+Run tests:
+
+```bash
+ctest --preset release
+```
+
+Install:
+
+```bash
+sudo cmake --install build/release
+```
+
+For Ubuntu:
+
+```bash
+sudo apt-get install qt6-tools-dev qt6-tools-dev-tools qt6-webengine-dev qt6-websockets-dev libqt6svg6 libqt6svg6-dev libuchardet-dev pkg-config
+```
+
+For CentOS:
+
+```bash
+sudo dnf install -y qt6-qtbase-devel qt6-qttools-devel qt6-qtwebengine-devel qt6-qtwebsockets-devel qt6-qtsvg-devel qt6-qtwebchannel-devel uchardet pkgconfig
+```
+
+Building for **macOS**? Check [here](https://github.com/notepadqq/notepadqq/wiki/Compiling-Notepadqq-on-macOS).
+
+#### Qt
+
+If the newest version of Qt isn't available on your distribution, you can use the [online installer](http://www.qt.io/download-open-source) to get the latest libraries and install them into your home directory (`$HOME/Qt`). Notepadqq will automatically use them.
+
+## Distribution packages
+
+- **Ubuntu, Debian, and others:** `sudo apt install notepadqq`
+- **Snap:** `sudo snap install notepadqq`
+- **Arch Linux:** `sudo pacman -S notepadqq` (community), or AUR [notepadqq-git](https://aur.archlinux.org/packages/notepadqq-git/)
+- **OpenSUSE:** `sudo zypper in notepadqq`
+- **Solus:** `sudo eopkg it notepadqq`
+- **Others:** use a package for a compatible distribution, or build from source.
+  If you want to submit a package: https://github.com/notepadqq/notepadqq-packaging

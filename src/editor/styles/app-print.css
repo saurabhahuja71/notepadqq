@@ -1,0 +1,34 @@
+﻿.editor.print {
+    position: absolute;
+    top: 0;
+    bottom: auto;
+    right: 0;
+    left: 0;
+}
+
+.editor.print .CodeMirror-activeline-background,
+.editor.print .monaco-editor .view-overlays .current-line {
+    background: none;
+}
+
+.editor.print .CodeMirror-linenumber {
+   visibility: hidden;
+}
+
+.editor.print .CodeMirror-gutters {
+    visibility: hidden;
+    width: 0px;
+}
+
+.editor.print .CodeMirror-guttermarker {
+    visibility: hidden;
+}
+
+.editor.print .CodeMirror-guttermarker-subtle {
+    visibility: hidden;
+}
+
+.editor.print .monaco-editor .margin {
+    visibility: hidden;
+    width: 0px !important;
+}
