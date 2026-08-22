@@ -84,7 +84,7 @@ base_pkgs=(
     dejavu-sans-fonts
     liberation-sans-fonts
     mesa-libEGL
-    mesa-libGBM
+    mesa-libgbm
     mesa-dri-drivers
 )
 qt_pkgs=(
