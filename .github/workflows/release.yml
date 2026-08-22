@@ -187,6 +187,13 @@ jobs:
             arch: aarch64
             runner: ubuntu-24.04-arm
     steps:
+      # oraclelinux container images ship without git; actions/checkout
+      # requires a real git client (REST fallback rejects submodules).
+      - name: Install git
+        shell: bash
+        run: |
+          dnf install -y -q git
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
