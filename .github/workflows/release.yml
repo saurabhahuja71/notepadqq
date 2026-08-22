@@ -168,12 +168,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - el: "8"
-            arch: x86_64
-            runner: ubuntu-24.04
-          - el: "8"
-            arch: aarch64
-            runner: ubuntu-24.04-arm
           - el: "9"
             arch: x86_64
             runner: ubuntu-24.04
@@ -281,7 +275,7 @@ jobs:
     name: Publish dnf repository (gh-pages)
     # Rebuilds the yum/dnf repository on gh-pages so `dnf upgrade` picks up
     # the release automatically. Layout:
-    #   rpm/el<N>/<arch>/*.rpm + repodata/   (N = 8, 9, 10)
+    #   rpm/el<N>/<arch>/*.rpm + repodata/   (N = 9, 10)
     #   notepadqq.repo                       (installable repo definition)
     needs: [package-rpm]
     runs-on: ubuntu-24.04
@@ -328,11 +322,10 @@ jobs:
           name="${GITHUB_REPOSITORY##*/}"
           pages_base="https://${owner}.github.io/${name}"
 
-          mkdir -p site/rpm/el8/x86_64 site/rpm/el8/aarch64 \
-                   site/rpm/el9/x86_64 site/rpm/el9/aarch64 \
+          mkdir -p site/rpm/el9/x86_64 site/rpm/el9/aarch64 \
                    site/rpm/el10/x86_64 site/rpm/el10/aarch64
 
-          for el in 8 9 10; do
+          for el in 9 10; do
             for arch in x86_64 aarch64; do
               src="rpms/notepadqq-release-rpm-el${el}-${arch}"
               dst="site/rpm/el${el}/${arch}"
@@ -365,10 +358,10 @@ jobs:
           </head>
           <body>
             <h1>Notepadqq dnf repository</h1>
-            <p>Add the repository (Oracle Linux / RHEL / EL clones 8, 9, 10):</p>
+            <p>Add the repository (Oracle Linux / RHEL / EL clones 9, 10):</p>
             <pre>
           sudo dnf config-manager addrepo --from-repofile=${pages_base}/notepadqq.repo   # dnf5 (OL10)
-          sudo dnf config-manager --add-repo=${pages_base}/notepadqq.repo                # dnf4 (OL8/OL9)
+          sudo dnf config-manager --add-repo=${pages_base}/notepadqq.repo                # dnf4 (OL9)
           sudo dnf install -y notepadqq
             </pre>
             <p>Packages are currently unsigned (<code>gpgcheck=0</code>). Per-distro trees live under <code>/rpm/el&lt;version&gt;/&lt;arch&gt;/</code>.</p>

@@ -31,7 +31,7 @@ This file is written to be provider-neutral so the same workflow can be used by 
 - The Snap package declares its own version in `snap/snapcraft.yaml`.
 - Git tags for stable releases should follow the `v<version>` pattern, for example `v2.1.0`.
 - GitHub release titles should follow the `v<version>` pattern, for example `v2.1.0`.
-- The release workflow in `.github/workflows/release.yml` publishes macOS DMG, Linux AppImage, and RPM assets for Oracle Linux 8/9/10 (x86_64 + aarch64).
+- The release workflow in `.github/workflows/release.yml` publishes macOS DMG, Linux AppImage, and RPM assets for Oracle Linux 9/10 (x86_64 + aarch64). OL8 is intentionally excluded: EL8 ships no Qt6 stack.
 - The same workflow's `publish-dnf-repo` job rebuilds the dnf/yum repository on `gh-pages` (`rpm/el<N>/<arch>/` + repodata + `notepadqq.repo`) and attaches the `.repo` file to the release. Packages are unsigned (`gpgcheck=0`) until GPG signing is introduced.
 
 ## Inputs To Gather First

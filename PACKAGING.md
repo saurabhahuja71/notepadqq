@@ -24,12 +24,13 @@ These are not treated as upstream runtime requirements. If a downstream package 
 
 The Snap package keeps its own launcher and Qt runtime configuration under `snap/local/`. That logic is package-specific and intentionally remains outside the upstream CMake install rules.
 
-## RPM (Oracle Linux 8 / 9 / 10)
+## RPM (Oracle Linux 9 / 10)
 
-The spec lives at `packaging/rpm/notepadqq.spec` and is built by `build-tools/package-rpm.sh` inside `oraclelinux:8|9|10` containers from `.github/workflows/release.yml` (job `package-rpm`, x86_64 + aarch64).
+The spec lives at `packaging/rpm/notepadqq.spec` and is built by `build-tools/package-rpm.sh` inside `oraclelinux:9|10` containers from `.github/workflows/release.yml` (job `package-rpm`, x86_64 + aarch64).
 
 - The RPM follows the canonical layout above; no distro-specific launcher wrapper is added.
-- Built with `-DCMAKE_BUILD_TYPE=Release -DNQQ_BUILD_TESTS=ON`; `%check` runs the ctest suite offscreen and validates the desktop file.
+- Built with `-DCMAKE_BUILD_TYPE=Release -DNQQ_BUILD_TESTS=ON`; `%check` runs the ctest suite offscreen and validates the desktop file. CI containers pass `--without ui_tests` (offscreen WebEngine/GL context creation is unreliable there); local builds run the full suite.
+- OL8 is not packaged because EL8 ships no Qt6 stack; OL8 users are pointed at the AppImage.
 - Debuginfo packages are disabled to keep the published dnf repository small.
 - Version is injected via `--define 'nqq_version X.Y.Z'`; Release is `1%{?dist}` with `%dist` forced to `.ol<N>`.
 
@@ -38,9 +39,8 @@ The spec lives at `packaging/rpm/notepadqq.spec` and is built by `build-tools/pa
 On every release, the `publish-dnf-repo` job rebuilds the yum/dnf repository on the `gh-pages` branch:
 
 ```
-rpm/el8/x86_64/*.rpm + repodata/
-rpm/el8/aarch64/...
-rpm/el9/...
+rpm/el9/x86_64/*.rpm + repodata/
+rpm/el9/aarch64/...
 rpm/el10/...
 notepadqq.repo
 index.html

@@ -1,15 +1,18 @@
-# <img src="https://user-images.githubusercontent.com/4319621/36906314-e3f99680-1e35-11e8-90fd-f959c9641f36.png" alt="Notepadqq" width="32" height="32" /> Notepadqq on Oracle Linux 8 / 9 / 10
+# <img src="https://user-images.githubusercontent.com/4319621/36906314-e3f99680-1e35-11e8-90fd-f959c9641f36.png" alt="Notepadqq" width="32" height="32" /> Notepadqq on Oracle Linux 9 / 10
 
 > [!WARNING]
 > Upstream Notepadqq is not actively maintained anymore. New maintainers are welcome.
 > It has been reported that with the most recent OS/Qt versions, the program can crash unexpectedly. Use this at your own risk.
 >  -- Daniele
 
-This repository contains the **Notepadqq source code** (from [github.com/notepadqq/notepadqq](https://github.com/notepadqq/notepadqq), merged on 2026) plus **RPM packaging for Oracle Linux 8, 9 and 10**. Every tagged release is built automatically by GitHub Actions inside official `oraclelinux` containers (x86_64 + aarch64), published as release assets, and shipped through a hosted **dnf/yum repository** so installs and updates are a one-liner.
+This repository contains the **Notepadqq source code** (from [github.com/notepadqq/notepadqq](https://github.com/notepadqq/notepadqq), merged on 2026) plus **RPM packaging for Oracle Linux 9 and 10**. Every tagged release is built automatically by GitHub Actions inside official `oraclelinux` containers (x86_64 + aarch64), published as release assets, and shipped through a hosted **dnf/yum repository** so installs and updates are a one-liner.
+
+> [!NOTE]
+> **Oracle Linux 8 is not supported**: EL8 ships no Qt6 stack (notepadqq requires Qt ≥ 6.4). OL8 users can run the portable `notepadqq-*-x86_64.AppImage` from the [Releases](../../releases) page instead.
 
 ### Links
 
-* [Install via dnf (OL8 / OL9 / OL10)](#install-via-dnf-ol8--ol9--ol10)
+* [Install via dnf (OL9 / OL10)](#install-via-dnf-ol9--ol10)
 * [Building on Oracle Linux](#building-on-oracle-linux)
 * [Upstream build instructions](#upstream-build-instructions)
 * [Distribution packages](#distribution-packages)
@@ -24,7 +27,7 @@ Please visit our [Wiki](https://github.com/notepadqq/notepadqq/wiki) for more sc
 
 ---
 
-## Install via dnf (OL8 / OL9 / OL10)
+## Install via dnf (OL9 / OL10)
 
 Add this repository's dnf repo definition once, then install and receive updates through normal `dnf upgrade`.
 
@@ -32,13 +35,13 @@ Add this repository's dnf repo definition once, then install and receive updates
 # OL10 ships dnf5:
 sudo dnf config-manager addrepo --from-repofile=https://saurabhahuja71.github.io/notepadqq/notepadqq.repo
 
-# OL8 / OL9 ship dnf4:
+# OL9 ships dnf4:
 sudo yum-config-manager --add-repo=https://saurabhahuja71.github.io/notepadqq/notepadqq.repo
 
 sudo dnf install -y notepadqq
 ```
 
-The `.repo` file uses `$releasever`/`$basearch`, so the same definition serves el8/el9/el10 on x86_64 and aarch64 automatically. Packages are currently **unsigned** (`gpgcheck=0`); dnf prints a warning on first install.
+The `.repo` file uses `$releasever`/`$basearch`, so the same definition serves el9/el10 on x86_64 and aarch64 automatically. Packages are currently **unsigned** (`gpgcheck=0`); dnf prints a warning on first install.
 
 Prefer grabbing the RPM by hand? Download `notepadqq-*.ol<N>.<arch>.rpm` from the project's [Releases](../../releases) page and `sudo dnf install ./notepadqp*.rpm` it.
 
@@ -46,7 +49,7 @@ Prefer grabbing the RPM by hand? Download `notepadqq-*.ol<N>.<arch>.rpm` from th
 
 ## Building on Oracle Linux
 
-Build Notepadqq from source on Oracle Linux 8 / 9 / 10. RPM packaging itself is automated (see [Packaging](#packaging-an-rpm)); this section covers local source builds and development.
+Build Notepadqq from source on Oracle Linux 9 / 10. RPM packaging itself is automated (see [Packaging](#packaging-an-rpm)); this section covers local source builds and development.
 
 > **Note:** Current Notepadqq uses **CMake + Qt 6**, not `./configure` / classic `make` and not Qt 5. There is no top-level `configure` script.
 
@@ -178,12 +181,12 @@ ctest --preset release
 
 ### Packaging an RPM
 
-RPMs are built automatically for **OL8 / OL9 / OL10 (x86_64 + aarch64)** on every tagged release by [`.github/workflows/release.yml`](.github/workflows/release.yml): GitHub-hosted runners execute each build inside official `oraclelinux:<8|9|10>` containers, `rpmbuild` compiles from source against that distro's Qt6 stack, artifacts are attached to the release, and repodata is republished to gh-pages so `dnf upgrade` picks up new versions.
+RPMs are built automatically for **OL9 / OL10 (x86_64 + aarch64)** on every tagged release by [`.github/workflows/release.yml`](.github/workflows/release.yml): GitHub-hosted runners execute each build inside official `oraclelinux:<9|10>` containers, `rpmbuild` compiles from source against that distro's Qt6 stack, artifacts are attached to the release, and repodata is republished to gh-pages so `dnf upgrade` picks up new versions.
 
 Key files:
 
-* [`packaging/rpm/notepadqq.spec`](packaging/rpm/notepadqq.spec) — EL8/9/10 spec (CMake + Qt6, runs tests in `%check`)
-* [`build-tools/package-rpm.sh`](build-tools/package-rpm.sh) — container-side wrapper: enables CRB/EPEL, installs BuildRequires, works around the OL9 LLVM/qt6-doctools clash, supplies cmake ≥ 3.24 where missing
+* [`packaging/rpm/notepadqq.spec`](packaging/rpm/notepadqq.spec) — EL9/10 spec (CMake + Qt6, runs tests in `%check`)
+* [`build-tools/package-rpm.sh`](build-tools/package-rpm.sh) — container-side wrapper: enables CRB/EPEL, installs BuildRequires, works around the OL9 LLVM/qt6-doctools clash and the OL10 qtbase/EPEL-webengine version skew
 
 To reproduce a release build locally (no proxy needed, direct network):
 
@@ -203,8 +206,8 @@ The produced RPM installs to the canonical upstream layout (`/usr/bin/notepadqq`
 | dnf fails on `qt6-qttools-devel` / LLVM 20 vs 21 | EPEL tools vs Mesa | **Omit tools package**; use `$HOME/Qt` via aqt (sections 1–2). The CI wrapper handles this automatically with `install_weak_deps=False` |
 | CMake cannot find LinguistTools / Qt6 | Tools not on system | Set `CMAKE_PREFIX_PATH=$HOME/Qt/6.6.3/gcc_64` |
 | App starts then fails on `.so` | Runtime libs | `export LD_LIBRARY_PATH=$HOME/Qt/6.6.3/gcc_64/lib` |
-| You only want to **run** Notepadqq | No need to build | Use the [dnf repository](#install-via-dnf-ol8--ol9--ol10) or `sudo snap install notepadqq` |
-| `cmake` below 3.24 (OL8) | Old AppStream cmake | The CI wrapper installs Kitware's binary tarball; locally use the same or any cmake ≥ 3.24 |
+| You only want to **run** Notepadqq | No need to build | Use the [dnf repository](#install-via-dnf-ol9--ol10) or `sudo snap install notepadqq` |
+| `cmake` below 3.24 | Old AppStream cmake | The CI wrapper installs Kitware's binary tarball when needed; locally use the same or any cmake ≥ 3.24 |
 
 ### Quick reference (OL9, works around LLVM clash)
 
@@ -283,7 +286,8 @@ If the newest version of Qt isn't available on your distribution, you can use th
 
 ## Distribution packages
 
-- **Oracle Linux 8 / 9 / 10 (and RHEL-compatible EL):** this project's dnf repository — see [Install via dnf](#install-via-dnf-ol8--ol9--ol10)
+- **Oracle Linux 9 / 10 (and RHEL-compatible EL):** this project's dnf repository — see [Install via dnf](#install-via-dnf-ol9--ol10)
+- **Oracle Linux 8:** no RPM (EL8 has no Qt6); use the portable AppImage from [Releases](../../releases)
 - **Ubuntu, Debian, and others:** `sudo apt install notepadqq`
 - **Snap:** `sudo snap install notepadqq`
 - **Arch Linux:** `sudo pacman -S notepadqq` (community), or AUR [notepadqq-git](https://aur.archlinux.org/packages/notepadqq-git/)

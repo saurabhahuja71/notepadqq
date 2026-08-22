@@ -1,11 +1,12 @@
-# Notepadqq RPM spec — targets Oracle Linux / RHEL / EL clones 8, 9 and 10.
+# Notepadqq RPM spec — targets Oracle Linux / RHEL / EL clones 9 and 10.
+# (EL8 ships no Qt6 stack, so it cannot build notepadqq; see README.md.)
 #
-# This spec is built by build-tools/package-rpm.sh inside oraclelinux:8/9/10
+# This spec is built by build-tools/package-rpm.sh inside oraclelinux:9/10
 # containers (see .github/workflows/release.yml, job `package-rpm`). The
 # wrapper script:
 #   * enables ol<N>_codeready_builder and EPEL,
 #   * installs the BuildRequires below against that distro's Qt6 stack,
-#   * supplies a cmake >= 3.24 when the distro ships an older one (OL8),
+#   * supplies a cmake >= 3.24 when the distro ships an older one,
 #   * passes the released version via `--define 'nqq_version X.Y.Z'`.
 #
 # Building outside the wrapper requires satisfying those prerequisites
