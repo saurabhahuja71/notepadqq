@@ -157,9 +157,77 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
+  package-rpm:
+    name: RPM / el${{ matrix.el }} / ${{ matrix.arch }}
+    # GitHub-hosted runners execute each build inside an official Oracle Linux
+    # container so every distro gets its own native Qt6 toolchain.
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: oraclelinux:${{ matrix.el }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - el: "8"
+            arch: x86_64
+            runner: ubuntu-24.04
+          - el: "8"
+            arch: aarch64
+            runner: ubuntu-24.04-arm
+          - el: "9"
+            arch: x86_64
+            runner: ubuntu-24.04
+          - el: "9"
+            arch: aarch64
+            runner: ubuntu-24.04-arm
+          - el: "10"
+            arch: x86_64
+            runner: ubuntu-24.04
+          - el: "10"
+            arch: aarch64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Resolve release tag
+        id: meta
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            tag="${{ github.event.release.tag_name }}"
+          else
+            tag="${{ inputs.tag }}"
+          fi
+
+          if [[ -z "$tag" ]]; then
+            echo "Release tag is required" >&2
+            exit 1
+          fi
+
+          version="${tag#v}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build and package RPMs
+        shell: bash
+        env:
+          SOURCE_DATE_EPOCH: 0
+        run: |
+          build-tools/package-rpm.sh "${{ steps.meta.outputs.version }}" dist
+
+      - name: Upload RPM artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: notepadqq-release-rpm-el${{ matrix.el }}-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+
   publish:
     name: Publish release assets
-    needs: [package-macos, package-linux]
+    needs: [package-macos, package-linux, package-rpm]
     runs-on: ubuntu-24.04
     steps:
       - name: Resolve release tag
@@ -191,6 +259,7 @@ jobs:
           files: |
             dist/**/*.dmg
             dist/**/*.AppImage
+            dist/**/*.rpm
           fail_on_unmatched_files: true
 
       - name: Publish release
@@ -200,3 +269,141 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release edit "${{ steps.meta.outputs.tag }}" --draft=false --latest
+
+  publish-dnf-repo:
+    name: Publish dnf repository (gh-pages)
+    # Rebuilds the yum/dnf repository on gh-pages so `dnf upgrade` picks up
+    # the release automatically. Layout:
+    #   rpm/el<N>/<arch>/*.rpm + repodata/   (N = 8, 9, 10)
+    #   notepadqq.repo                       (installable repo definition)
+    needs: [package-rpm]
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: gh-pages-dnf-repo
+      cancel-in-progress: false
+    steps:
+      - name: Install repo tools
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends createrepo-c
+
+      - name: Download RPM artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: rpms
+
+      - name: Resolve release tag
+        id: meta
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            tag="${{ github.event.release.tag_name }}"
+          else
+            tag="${{ inputs.tag }}"
+          fi
+
+          if [[ -z "$tag" ]]; then
+            echo "Release tag is required" >&2
+            exit 1
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Lay out repository tree and generate metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          owner="${GITHUB_REPOSITORY%%/*}"
+          name="${GITHUB_REPOSITORY##*/}"
+          pages_base="https://${owner}.github.io/${name}"
+
+          mkdir -p site/rpm/el8/x86_64 site/rpm/el8/aarch64 \
+                   site/rpm/el9/x86_64 site/rpm/el9/aarch64 \
+                   site/rpm/el10/x86_64 site/rpm/el10/aarch64
+
+          for el in 8 9 10; do
+            for arch in x86_64 aarch64; do
+              src="rpms/notepadqq-release-rpm-el${el}-${arch}"
+              dst="site/rpm/el${el}/${arch}"
+              if compgen -G "${src}/*.rpm" > /dev/null; then
+                cp "${src}"/*.rpm "${dst}/"
+                createrepo_c --quiet "${dst}"
+                echo "el${el}/${arch}: $(ls "${dst}"/*.rpm | wc -l) packages"
+              else
+                echo "WARNING: no artifacts for el${el}/${arch}" >&2
+                rmdir "${dst}" 2>/dev/null || rm -rf "${dst}"
+              fi
+            done
+          done
+
+          cat > site/notepadqq.repo <<EOF
+          [notepadqq]
+          name=Notepadqq for Enterprise Linux \$releasever - \$basearch
+          baseurl=${pages_base}/rpm/el\$releasever/\$basearch/
+          enabled=1
+          gpgcheck=0
+          metadata_expire=1d
+          EOF
+
+          cat > site/index.html <<EOF
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <title>Notepadqq dnf repository</title>
+          </head>
+          <body>
+            <h1>Notepadqq dnf repository</h1>
+            <p>Add the repository (Oracle Linux / RHEL / EL clones 8, 9, 10):</p>
+            <pre>
+          sudo dnf config-manager addrepo --from-repofile=${pages_base}/notepadqq.repo   # dnf5 (OL10)
+          sudo dnf config-manager --add-repo=${pages_base}/notepadqq.repo                # dnf4 (OL8/OL9)
+          sudo dnf install -y notepadqq
+            </pre>
+            <p>Packages are currently unsigned (<code>gpgcheck=0</code>). Per-distro trees live under <code>/rpm/el&lt;version&gt;/&lt;arch&gt;/</code>.</p>
+          </body>
+          </html>
+          EOF
+
+      - name: Push gh-pages branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo_url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global init.defaultBranch gh-pages
+
+          if git ls-remote --heads "${repo_url}" gh-pages | grep -q .; then
+            git clone --depth 1 --branch gh-pages "${repo_url}" pages-repo
+            find pages-repo -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          else
+            git init pages-repo
+            cd pages-repo
+            git remote add origin "${repo_url}"
+            cd ..
+          fi
+
+          cp -a site/. pages-repo/
+
+          cd pages-repo
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to the dnf repository tree"
+          else
+            git commit -m "Publish dnf repository for ${{ steps.meta.outputs.tag }}"
+            git push origin gh-pages
+          fi
+
+      - name: Attach repo file to release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          files: site/notepadqq.repo
