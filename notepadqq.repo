@@ -1,3 +1,12 @@
+# Notepadqq dnf repository (Oracle Linux 9 / 10, x86_64 + aarch64).
+#
+# Prerequisites: notepadqq's Qt6/WebEngine/uchardet runtime
+# dependencies come from Oracle's EPEL and CodeReady Builder repos:
+#   OL9:  sudo dnf install -y oracle-epel-release-el9
+#         sudo dnf config-manager --set-enabled ol9_codeready_builder
+#   OL10: sudo dnf install -y oracle-epel-release-el10
+#         sudo dnf config-manager setopt ol10_codeready_builder.enabled=1
+
 [notepadqq]
 name=Notepadqq for Enterprise Linux $releasever - $basearch
 baseurl=https://saurabhahuja71.github.io/notepadqq/rpm/el$releasever/$basearch/
