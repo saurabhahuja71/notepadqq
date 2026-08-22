@@ -1,0 +1,6 @@
+[notepadqq]
+name=Notepadqq for Enterprise Linux $releasever - $basearch
+baseurl=https://saurabhahuja71.github.io/notepadqq/rpm/el$releasever/$basearch/
+enabled=1
+gpgcheck=0
+metadata_expire=1d
