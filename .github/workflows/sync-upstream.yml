@@ -1,0 +1,54 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    # Weekly, Mondays 03:00 UTC
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  merge-upstream:
+    name: Merge upstream default branch into main
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream
+        id: upstream
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/notepadqq/notepadqq.git
+          git fetch upstream
+          branch="$(git ls-remote --symref upstream HEAD | awk '/^ref:/ { sub("refs/heads/", "", $2); print $2 }')"
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+          echo "behind=$(git rev-list --count main "refs/remotes/upstream/${branch}")" >> "$GITHUB_OUTPUT"
+
+      - name: Merge upstream into main
+        id: merge
+        if: steps.upstream.outputs.behind != '0'
+        continue-on-error: true
+        run: |
+          git merge --no-edit "refs/remotes/upstream/${{ steps.upstream.outputs.branch }}"
+          git push origin main
+
+      - name: Report conflicts
+        if: steps.merge.outcome == 'failure'
+        run: |
+          echo "::error::Upstream merge conflicts on main. Run manually: git fetch upstream && git merge upstream/${{ steps.upstream.outputs.branch }} && resolve && git push"
+          exit 1
