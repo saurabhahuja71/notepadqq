@@ -414,3 +414,5 @@ jobs:
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
           files: site/notepadqq.repo
+
+# re-index trigger
