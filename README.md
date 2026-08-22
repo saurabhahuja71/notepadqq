@@ -29,7 +29,19 @@ Please visit our [Wiki](https://github.com/notepadqq/notepadqq/wiki) for more sc
 
 ## Install via dnf (OL9 / OL10)
 
-Add this repository's dnf repo definition once, then install and receive updates through normal `dnf upgrade`.
+**1. Enable the prerequisite repos.** Notepadqq's Qt6 / WebEngine / uchardet runtime libraries come from Oracle's EPEL and CodeReady Builder:
+
+```bash
+# OL9:
+sudo dnf install -y oracle-epel-release-el9
+sudo dnf config-manager --set-enabled ol9_codeready_builder
+
+# OL10 (dnf5):
+sudo dnf install -y oracle-epel-release-el10
+sudo dnf config-manager setopt ol10_codeready_builder.enabled=1
+```
+
+**2. Add this repository's dnf repo definition once, then install and receive updates through normal `dnf upgrade`.**
 
 ```bash
 # OL10 ships dnf5:
