@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="utf-8"><title>Notepadqq dnf repository</title></head>
+<head>
+  <meta charset="utf-8">
+  <title>Notepadqq dnf repository</title>
+</head>
 <body>
   <h1>Notepadqq dnf repository</h1>
-  <p>Add the repository (Oracle Linux / RHEL / EL clones 8, 9, 10):</p>
+  <p>Add the repository (Oracle Linux / RHEL / EL clones 9, 10):</p>
   <pre>
 sudo dnf config-manager addrepo --from-repofile=https://saurabhahuja71.github.io/notepadqq/notepadqq.repo   # dnf5 (OL10)
-sudo yum-config-manager --add-repo=https://saurabhahuja71.github.io/notepadqq/notepadqq.repo                # dnf4 (OL8/OL9)
+sudo dnf config-manager --add-repo=https://saurabhahuja71.github.io/notepadqq/notepadqq.repo                # dnf4 (OL9)
 sudo dnf install -y notepadqq
   </pre>
-  <p>Packages are currently unsigned (<code>gpgcheck=0</code>). RPMs are published here automatically on each tagged release.</p>
+  <p>Packages are currently unsigned (<code>gpgcheck=0</code>). Per-distro trees live under <code>/rpm/el&lt;version&gt;/&lt;arch&gt;/</code>.</p>
 </body>
 </html>
