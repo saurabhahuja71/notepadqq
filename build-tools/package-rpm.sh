@@ -83,6 +83,9 @@ base_pkgs=(
     desktop-file-utils
     dejavu-sans-fonts
     liberation-sans-fonts
+    mesa-libEGL
+    mesa-libGBM
+    mesa-dri-drivers
 )
 qt_pkgs=(
     uchardet-devel
@@ -95,9 +98,20 @@ qt_pkgs=(
     qt6-qtwebsockets-devel
 )
 
+# OL10 ships qt6-qtbase 6.10.x in appstream while EPEL's qtwebengine is built
+# against 6.9.x; --nobest lets the solver align the whole stack to the EPEL
+# version. The qt6-doctools exclusion is only needed on OL9 (LLVM conflict).
+install_flags=(--setopt=install_weak_deps=False)
+exclude_args=()
+if [ "${el_ver}" -ge 10 ]; then
+    install_flags+=(--nobest)
+else
+    exclude_args=(--exclude='qt6-doctools*')
+fi
+
 echo "==> Installing build dependencies"
-dnf install -y --setopt=install_weak_deps=False "${base_pkgs[@]}" "${qt_pkgs[@]}" ||
-    dnf install -y --setopt=install_weak_deps=False --exclude='qt6-doctools*' \
+dnf install -y "${install_flags[@]}" "${base_pkgs[@]}" "${qt_pkgs[@]}" ||
+    dnf install -y "${install_flags[@]}" "${exclude_args[@]}" \
         "${base_pkgs[@]}" "${qt_pkgs[@]}"
 
 if ! find /usr/bin /usr/lib64/qt6/bin -maxdepth 1 -name 'lrelease*' 2>/dev/null | grep -q .; then
@@ -147,11 +161,16 @@ tar czf "${topdir}/SOURCES/notepadqq-${version}.tar.gz" \
     .
 
 echo "==> rpmbuild -ba"
+rpmbuild_extra=()
+if [ -n "${GITHUB_ACTIONS:-}" ]; then
+    rpmbuild_extra+=(--without ui_tests)
+fi
 rpmbuild -ba \
     --define "_topdir ${topdir}" \
     --define "_sourcedir ${topdir}/SOURCES" \
     --define "nqq_version ${version}" \
     --define "dist .ol${el_ver}" \
+    "${rpmbuild_extra[@]}" \
     packaging/rpm/notepadqq.spec
 
 # ---------------------------------------------------------------------------

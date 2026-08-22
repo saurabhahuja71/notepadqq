@@ -11,6 +11,10 @@
 # Building outside the wrapper requires satisfying those prerequisites
 # yourself; see README.md ("Building on Oracle Linux") for the manual path.
 
+# ui-tests need a working offscreen WebEngine (GL stack); CI containers run
+# with --without ui_tests because OpenGL context creation is unreliable there.
+%bcond_without ui_tests
+
 Name:           notepadqq
 Version:        %{?nqq_version}%{!?nqq_version:2.2.0}
 Release:        1%{?dist}
@@ -70,7 +74,11 @@ DESTDIR=%{buildroot} cmake --install redhat-linux-build
 %check
 export QT_QPA_PLATFORM=offscreen
 export QTWEBENGINE_DISABLE_SANDBOX=1
-ctest --test-dir redhat-linux-build --output-on-failure
+export QTWEBENGINE_CHROMIUM_FLAGS=%{?nqq_chromium_flags}--no-sandbox
+ctest --test-dir redhat-linux-build --output-on-failure -R cpp-correctness-tests
+%if %{with ui_tests}
+ctest --test-dir redhat-linux-build --output-on-failure -R ui-tests
+%endif
 desktop-file-validate %{buildroot}%{_datadir}/applications/notepadqq.desktop
 
 
