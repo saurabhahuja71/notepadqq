@@ -52,10 +52,6 @@ jobs:
           - os: ubuntu-24.04-arm
             preset: release
             packages_file: .github/ci/ubuntu-24.04-packages.txt
-          - os: macos-14
-            preset: ci
-          - os: macos-14
-            preset: release
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -68,20 +64,6 @@ jobs:
         run: |
           sudo apt-get update
           xargs -a "${{ matrix.packages_file }}" sudo apt-get install -y --no-install-recommends
-
-      - name: Install macOS dependencies
-        if: startsWith(matrix.os, 'macos')
-        shell: bash
-        run: |
-          brew update
-          brew install cmake ninja qt@6 uchardet
-
-      - name: Configure macOS Qt environment
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          echo "CMAKE_PREFIX_PATH=$(brew --prefix qt@6)" >> "$GITHUB_ENV"
-          echo "PKG_CONFIG_PATH=$(brew --prefix uchardet)/lib/pkgconfig:${PKG_CONFIG_PATH:-}" >> "$GITHUB_ENV"
 
       - name: Configure
         shell: bash

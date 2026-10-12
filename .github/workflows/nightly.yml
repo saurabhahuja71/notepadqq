@@ -47,12 +47,6 @@ jobs:
             arch: arm64
             artifact_name: notepadqq-nightly-linux-arm64
             packages_file: .github/ci/ubuntu-24.04-packages.txt
-          # - os: macos-15-intel
-          #   arch: x86_64
-          #   artifact_name: notepadqq-nightly-macos-x86_64
-          - os: macos-14
-            arch: arm64
-            artifact_name: notepadqq-nightly-macos-arm64
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -65,21 +59,6 @@ jobs:
         run: |
           sudo apt-get update
           xargs -a "${{ matrix.packages_file }}" sudo apt-get install -y --no-install-recommends
-
-      - name: Install macOS dependencies
-        if: startsWith(matrix.os, 'macos')
-        shell: bash
-        run: |
-          brew update
-          brew install cmake ninja qt@6 uchardet
-
-      - name: Configure macOS Qt environment
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          echo "PATH=$(brew --prefix qt@6)/bin:${PATH}" >> "$GITHUB_ENV"
-          echo "CMAKE_PREFIX_PATH=$(brew --prefix qt@6)" >> "$GITHUB_ENV"
-          echo "PKG_CONFIG_PATH=$(brew --prefix uchardet)/lib/pkgconfig:${PKG_CONFIG_PATH:-}" >> "$GITHUB_ENV"
 
       - name: Configure
         shell: bash
@@ -95,11 +74,6 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
         shell: bash
         run: build-tools/package-nightly-linux.sh build/release dist AppDir "${{ matrix.artifact_name }}"
-
-      - name: Package macOS bundle
-        if: startsWith(matrix.os, 'macos')
-        shell: bash
-        run: build-tools/package-nightly-macos.sh build/release dist nightly-root "${{ matrix.artifact_name }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
